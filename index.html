@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Burstin T300 - Card Games Hub</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0d1b2a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 1. Kirish oynasi (Splash Screen) */
+        #splash-screen {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1280&q=80') no-repeat center center;
+            background-size: cover;
+            z-index: 10;
+        }
+        #splash-screen h1 {
+            font-size: 52px;
+            color: #ffcc00;
+            text-shadow: 3px 3px 15px rgba(0,0,0,0.9);
+            margin: 0;
+            letter-spacing: 2px;
+        }
+        #splash-screen p {
+            font-size: 20px;
+            color: #f4d35e;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            margin-top: 5px;
+        }
+
+        /* 2. Asosiy menyu */
+        #menu-screen {
+            background: linear-gradient(135deg, #1b263b, #0d1b2a);
+        }
+        .menu-btn {
+            padding: 14px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            background: #e0a96d;
+            border: none;
+            border-radius: 8px;
+            color: #0d1b2a;
+            cursor: pointer;
+            margin: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: 0.2s;
+            width: 240px;
+            text-align: center;
+        }
+        .menu-btn:hover { background: #f4d35e; transform: scale(1.05); }
+
+        /* 3. Yuklanish ekrani */
+        #loading-screen {
+            background: #0d1b2a;
+        }
+        .spinner {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #e0a96d;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 4. PUBG Lobi ekrani (Tog'li tabiat foni) */
+        #lobby-screen {
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1280&q=80') no-repeat center center;
+            background-size: cover;
+            justify-content: space-between;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .lobby-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .profile-box {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #e0a96d;
+            backdrop-filter: blur(5px);
+        }
+        .add-friend-btn {
+            background: #2a9d8f;
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .add-friend-btn:hover { background: #21867a; transform: scale(1.1); }
+
+        /* Lobi markazi - 4 kishilik jamoa joylashuvi */
+        .lobby-center {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        .character-slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(224, 169, 109, 0.4);
+            backdrop-filter: blur(4px);
+        }
+        .character-avatar {
+            width: 65px;
+            height: 95px;
+            background: #e0a96d;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #0d1b2a;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .status-badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status-ready { background: #2a9d8f; color: white; }
+        .status-waiting { background: #e76f51; color: white; }
+
+        /* Lobi pastki qismi - O'yin kataklari va o'yinchilar soni */
+        .lobby-footer {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .game-modes-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            max-width: 650px;
+            width: 100%;
+        }
+        .mode-card {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.3);
+            font-size: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .mode-card span {
+            font-size: 10px;
+            color: #e0a96d;
+        }
+        .mode-card.active, .mode-card:hover {
+            background: #e0a96d;
+            color: #0d1b2a;
+            border-color: #fff;
+        }
+        .mode-card.active span, .mode-card:hover span {
+            color: #1b263b;
+        }
+        
+        .action-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .start-btn {
+            padding: 10px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            background: #e63946;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            transition: 0.2s;
+        }
+        .start-btn:hover { background: #d62828; transform: scale(1.05); }
+
+        .ready-btn {
+            padding: 10px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            background: #2a9d8f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            transition: 0.2s;
+        }
+        .ready-btn.ready-active { background: #e76f51; }
+
+        /* 5. Original O'yin Stoli Ekrani (Tog'li fon, 4 kishi, zaxira karta) */
+        #gameplay-screen {
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1280&q=80') no-repeat center center;
+            background-size: cover;
+            justify-content: space-between;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .game-table-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Dumaloq original stol */
+        .poker-table {
+            width: 450px;
+            height: 220px;
+            background: radial-gradient(circle, #1b4332 0%, #081c15 100%);
+            border: 8px solid #582f0e;
+            border-radius: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        /* O'rtadagi zaxira karta va kozir */
+        .table-center-cards {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px dashed rgba(255,255,255,0.4);
+        }
+        .card-slot-visual {
+            width: 40px;
+            height: 60px;
+            background: #f8f9fa;
+            color: #333;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        }
+        .card-slot-visual.kozir {
+            background: #e63946;
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        /* Stol atrofidagi 4 o'yinchi joylashuvi */
+        .table-player {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            background: rgba(0,0,0,0.6);
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid #e0a96d;
+        }
+        .p-top { top: 5px; }
+        .p-bottom { bottom: 5px; }
+        .p-left { left: 5px; top: 50%; transform: translateY(-50%); }
+        .p-right { right: 5px; top: 50%; transform: translateY(-50%); }
+
+        /* 6. Offline o'yin ekrani */
+        #offline-screen {
+            background: #0d4a22;
+            justify-content: flex-start;
+            padding: 20px;
+        }
+
+        /* 7. Settings (Sozlamalar va Ovozli chat boshqaruvi) */
+        #settings-screen {
+            background: #1b263b;
+            gap: 15px;
+            padding: 20px;
+        }
+        .setting-box {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #415a77;
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .voice-control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        .mute-toggle-btn {
+            background: #e63946;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .mute-toggle-btn.muted {
+            background: #2a9d8f;
+        }
+        .back-btn {
+            padding: 10px 25px;
+            background: #415a77;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .back-btn:hover { background: #5c769b; }
+
+        /* Ekranda doimiy ko'rinib turadigan Mikrofon tugmasi */
+        #floating-mic-widget {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #2a9d8f;
+            padding: 8px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 99;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+        #floating-mic-widget.mic-off {
+            border-color: #e63946;
+        }
+
+        /* Bildirishnoma (Modal) */
+        #notification-modal {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #222;
+            border: 2px solid #e0a96d;
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .notif-btns button {
+            padding: 6px 12px;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-yes { background: #2a9d8f; color: white; }
+        .btn-no { background: #e63946; color: white; }
+    </style>
+</head>
+<body>
+
+    <!-- Ekranda doimiy ko'rinib turadigan Mikrofon vidjeti -->
+    <div id="floating-mic-widget" class="hidden" onclick="openSettings()">
+        <span id="mic-icon">🎙️</span>
+        <span id="mic-status-text" style="font-size: 12px; font-weight: bold;">Ovoz: Ochiq</span>
+    </div>
+
+    <!-- 1. Kirish oynasi (3 soniya Burstin T300) -->
+    <div id="splash-screen" class="screen">
+        <h1>DURAK</h1>
+        <p>Burstin T300 Edition</p>
+    </div>
+
+    <!-- 2. Asosiy menyu -->
+    <div id="menu-screen" class="screen hidden">
+        <h1 style="color: #ffcc00; margin-bottom: 20px; text-shadow: 2px 2px 10px rgba(0,0,0,0.8);">KARTA O'YINLARI</h1>
+        <div>
+            <button class="menu-btn" onclick="selectMode('online')">Online</button>
+            <button class="menu-btn" onclick="selectMode('offline')">Offline</button>
+            <button class="menu-btn" onclick="openSettings()">Sozlamalar (Settings)</button>
+        </div>
+    </div>
+
+    <!-- 3. Online Yuklanish oynasi (3 soniya "Oka") -->
+    <div id="loading-screen" class="screen hidden">
+        <div class="spinner"></div>
+        <h2>Serverga ulanmoqda...</h2>
+    </div>
+
+    <!-- 4. PUBG Lobi ekrani (Online) -->
+    <div id="lobby-screen" class="screen hidden">
+        <!-- Do'stlik bildirishnomasi -->
+        <div id="notification-modal">
+            <span id="notif-text">Do'stlik taklifi!</span>
+            <div class="notif-btns">
+                <button class="btn-yes" onclick="acceptFriend()">✅</button>
+                <button class="btn-no" onclick="closeNotif()">❌</button>
+            </div>
+        </div>
+
+        <!-- Yuqori qism: Orqaga va Profil / ID -->
+        <div class="lobby-header">
+            <button class="back-btn" onclick="goToMenu()">Orqaga</button>
+            <div class="profile-box">
+                <button class="add-friend-btn" onclick="sendFriendRequest()">+</button>
+                <div>
+                    <div id="user-name" style="font-weight: bold; color: #f4d35e; font-size: 14px;">O'yinchi_777</div>
+                    <div id="user-id" style="font-size: 11px; color: #aaa;">ID: 849201</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Markaz: 4 Kishilik Jamoa va Personajlar -->
+        <div class="lobby-center">
+            <!-- 1. Siz (Sardor) -->
+            <div class="character-slot">
+                <div class="character-avatar">
+                    <span>Siz (Sardor)</span>
+                    <div style="font-size: 22px;">👤</div>
+                </div>
+                <span class="status-badge status-ready">Sardor</span>
+            </div>
+
+            <!-- 2. Do'st 1 -->
+            <div id="slot-1" class="character-slot hidden">
+                <div class="character-avatar" style="background: #2a9d8f; color: white;">
+                    <span id="name-1">Aziz</span>
+                    <div style="font-size: 22px;">👤</div>
+                </div>
+                <span id="status-1" class="status-badge status-waiting">Kutilyapti...</span>
+            </div>
+
+            <!-- 3. Do'st 2 -->
+            <div id="slot-2" class="character-slot hidden">
+                <div class="character-avatar" style="background: #e76f51; color: white;">
+                    <span id="name-2">Bekzod</span>
+                    <div style="font-size: 22px;">👤</div>
+                </div>
+                <span id="status-2" class="status-badge status-waiting">Kutilyapti...</span>
+            </div>
+
+            <!-- 4. Do'st 3 -->
+            <div id="slot-3" class="character-slot hidden">
+                <div class="character-avatar" style="background: #457b9d; color: white;">
+                    <span id="name-3">Jasur</span>
+                    <div style="font-size: 22px;">👤</div>
+                </div>
+                <span id="status-3" class="status-badge status-waiting">Kutilyapti...</span>
+            </div>
+        </div>
+
+        <!-- Pastki qism: Hamma karta o'yinlari kataklari va o'yinchilar soni -->
+        <div class="lobby-footer">
+            <div class="game-modes-grid">
+                <div class="mode-card active" onclick="setGameType(this, 'Durak', '2-6 o\'yinchi')">Durak (Ahmoq)<span>2-6 o'yinchi</span></div>
+                <div class="mode-card" onclick="setGameType(this, 'Kozir', '2-4 o\'yinchi')">Kozir<span>2-4 o'yinchi</span></div>
+                <div class="mode-card" onclick="setGameType(this, 'Minglik', '3 o\'yinchi')">Minglik (1000)<span>3 o'yinchi</span></div>
+                <div class="mode-card" onclick="setGameType(this, 'Bura', '2-4 o\'yinchi')">Bura<span>2-4 o'yinchi</span></div>
+                <div class="mode-card" onclick="setGameType(this, 'Sekushka', '2-5 o\'yinchi')">Sekushka<span>2-5 o'yinchi</span></div>
+                <div class="mode-card" onclick="setGameType(this, 'Poker', '2-9 o\'yinchi')">Poker<span>2-9 o'yinchi</span></div>
+                <div class="mode-card" onclick="setGameType(this, 'Blackjack', '1-7 o\'yinchi')">Blackjack<span>1-7 o'yinchi</span></div>
+                <div class="mode-card" onclick="setGameType(this, 'Solitaire', '1 o\'yinchi')">Solitaire<span>1 o'yinchi</span></div>
+            </div>
+
+            <div class="action-row">
+                <button class="start-btn" onclick="startGameSession()">START</button>
+                <button id="ready-btn" class="ready-btn hidden" onclick="toggleReady()">TAYYOR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Original O'yin Stoli Ekrani (Tog'li fon, 4 kishi, zaxira karta) -->
+    <div id="gameplay-screen" class="screen hidden">
+        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; z-index: 2;">
+            <button class="back-btn" onclick="returnToLobby()">Lobbiya qaytish</button>
+            <h3 id="current-game-title" style="color: #ffcc00; text-shadow: 2px 2px 8px rgba(0,0,0,0.8); margin: 0;">Durak - 4 O'yinchi (6 tadan karta)</h3>
+            <div></div>
+        </div>
+
+        <div class="game-table-container">
+            <!-- Stol atrofidagi 4 o'yinchi -->
+            <div class="table-player p-top">
+                <span id="t-name-1" style="font-size: 11px; color: #f4d35e; font-weight: bold;">Aziz</span>
+                <div style="font-size: 18px;">👤</div>
+            </div>
+            <div class="table-player p-left">
+                <span id="t-name-2" style="font-size: 11px; color: #f4d35e; font-weight: bold;">Bekzod</span>
+                <div style="font-size: 18px;">👤</div>
+            </div>
+            <div class="table-player p-right">
+                <span id="t-name-3" style="font-size: 11px; color: #f4d35e; font-weight: bold;">Jasur</span>
+                <div style="font-size: 18px;">👤</div>
+            </div>
+            <div class="table-player p-bottom">
+                <span style="font-size: 11px; color: #2a9d8f; font-weight: bold;">Siz (Sardor)</span>
+                <div style="font-size: 18px;">👤</div>
+            </div>
+
+            <!-- Original stol va o'rtadagi zaxira karta -->
+            <div class="poker-table">
+                <div class="table-center-cards">
+                    <div class="card-slot-visual">🂠<span style="font-size:9px;">Zaxira</span></div>
+                    <div class="card-slot-visual kozir">♠ K<span style="font-size:8px;">Kozir</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Offline o'yin ekrani -->
+    <div id="offline-screen" class="screen hidden">
+        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+            <button class="back-btn" onclick="goToMenu()">Menyuga qaytish</button>
+            <h2>Offline O'yin Rejimi</h2>
+            <div></div>
+        </div>
+        <div style="margin-top: 50px; text-align: center;">
+            <p>Botga qarshi oflayn o'yin muhiti tayyorlanmoqda...</p>
+        </div>
+    </div>
+
+    <!-- 7. Settings (Sozlamalar va Ovozli chat boshqaruvi) -->
+    <div id="settings-screen" class="screen hidden">
+        <h2 style="color: #ffcc00; margin: 0;">Sozlamalar & Ovozli Chat</h2>
+        
+        <div class="setting-box">
+            <h4 style="margin: 0; color: #e0a96d;">Ovozli Chat Boshqaruvi (Kim eshitmasin?)</h4>
+            <p style="font-size: 12px; color: #aaa; margin: 0;">Quyidagi ismlar ustiga bosib, o'z ovozingizni o'sha o'yinchiga eshitilmaydigan qilib qo'yishingiz mumkin:</p>
+            
+            <div class="voice-control-item">
+                <span id="v-name-1">1. Aziz</span>
+                <button id="mute-btn-1" class="mute-toggle-btn" onclick="toggleMuteUser(1)">Eshitmoqda</button>
+            </div>
+            <div class="voice-control-item">
+                <span id="v-name-2">2. Bekzod</span>
+                <button id="mute-btn-2" class="mute-toggle-btn" onclick="toggleMuteUser(2)">Eshitmoqda</button>
+            </div>
+            <div class="voice-control-item">
+                <span id="v-name-3">3. Jasur</span>
+                <button id="mute-btn-3" class="mute-toggle-btn" onclick="toggleMuteUser(3)">Eshitmoqda</button>
+            </div>
+        </div>
+
+        <div class="setting-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Umumiy Mikrofon:</span>
+                <button id="global-mic-btn" class="mute-toggle-btn" onclick="toggleGlobalMic()">Ochiq 🎙️</button>
+            </div>
+        </div>
+
+        <button class="back-btn" onclick="closeSettings()">Saqlash va Qaytish</button>
+    </div>
+
+    <script>
+        let selectedGame = 'Durak';
+        let isReady = false;
+        let globalMicOn = true;
+        let mutedUsers = { 1: false, 2: false, 3: false };
+        let activeFriendsCount = 0;
+
+        // 1. Kirish oynasidan keyin menyuga o'tish (3 soniya)
+        setTimeout(() => {
+            document.getElementById('splash-screen').classList.add('hidden');
+            document.getElementById('menu-screen').classList.remove('hidden');
+        }, 3000);
+
+        function selectMode(type) {
+            if (type === 'offline') {
+                document.getElementById('menu-screen').classList.add('hidden');
+                document.getElementById('offline-screen').classList.remove('hidden');
+            } else {
+                document.getElementById('menu-screen').classList.add('hidden');
+                document.getElementById('loading-screen').classList.remove('hidden');
+                
+                // Online bosilganda 3 soniya yuklanib Lobi chiqishi va mikrofon vidjeti paydo bo'lishi
+                setTimeout(() => {
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('lobby-screen').classList.remove('hidden');
+                    document.getElementById('floating-mic-widget').classList.remove('hidden');
+                }, 3000);
+            }
+        }
+
+        function openSettings() {
+            document.querySelectorAll('.screen').forEach(s => {
+                if(!s.classList.contains('hidden')) s.dataset.prev = s.id;
+            });
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('settings-screen').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-screen').classList.add('hidden');
+            // Qaysi ekrandan kelgan bo'lsa o'shanga qaytamiz
+            document.getElementById('lobby-screen').classList.remove('hidden');
+        }
+
+        function goToMenu() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById('menu-screen').classList.remove('hidden');
+            document.getElementById('floating-mic-widget').classList.add('hidden');
+        }
+
+        function sendFriendRequest() {
+            if (activeFriendsCount >= 3) {
+                alert("Jamoa to'ldi! (Maksimal 4 kishi)");
+                return;
+            }
+            let targetId = prompt("Do'stning ID raqamini kiriting:");
+            if(targetId) {
+                alert("Do'stlik taklifi yuborildi!");
+                setTimeout(() => {
+                    document.getElementById('notif-text').innerText = `ID: ${targetId} dan do'stlik keldi!`;
+                    document.getElementById('notification-modal').style.display = 'flex';
+                }, 2000);
+            }
+        }
+
+        function closeNotif() {
+            document.getElementById('notification-modal').style.display = 'none';
+        }
+
+        function acceptFriend() {
+            document.getElementById('notification-modal').style.display = 'none';
+            activeFriendsCount++;
+            
+            let slotId = 'slot-' + activeFriendsCount;
+            document.getElementById(slotId).classList.remove('hidden');
+            
+            if (activeFriendsCount === 1) {
+                document.getElementById('ready-btn').classList.remove('hidden');
+            }
+            alert("Do'st qabul qilindi va jamoaga qo'shildi!");
+        }
+
+        function toggleReady() {
+            isReady = !isReady;
+            let btn = document.getElementById('ready-btn');
+            // Agar do'st bo'lsa status o'zgaradi
+            let statusBadge = document.getElementById('status-1');
+
+            if (isReady) {
+                btn.innerText = "BEKOR QILISH";
+                btn.classList.add('ready-active');
+                if(statusBadge) {
+                    statusBadge.innerText = "Tayyor ✅";
+                    statusBadge.className = "status-badge status-ready";
+                }
+            } else {
+                btn.innerText = "TAYYOR";
+                btn.classList.remove('ready-active');
+                if(statusBadge) {
+                    statusBadge.innerText = "Kutilyapti...";
+                    statusBadge.className = "status-badge status-waiting";
+                }
+            }
+        }
+
+        function setGameType(element, gameName, playersInfo) {
+            document.querySelectorAll('.mode-card').forEach(card => card.classList.remove('active'));
+            element.classList.add('active');
+            selectedGame = gameName + " (" + playersInfo + ")";
+        }
+
+        // Sardor Startni bosadi
+        function startGameSession() {
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('gameplay-screen').classList.remove('hidden');
+            document.getElementById('current-game-title').innerText = selectedGame + " - Stol Tartibi";
+        }
+
+        function returnToLobby() {
+            document.getElementById('gameplay-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+        }
+
+        // Ovozli chatni individual boshqarish (Kim eshitmasin?)
+        function toggleMuteUser(userId) {
+            mutedUsers[userId] = !mutedUsers[userId];
+            let btn = document.getElementById('mute-btn-' + userId);
+            if (mutedUsers[userId]) {
+                btn.innerText = "Eshitmayapti ❌";
+                btn.classList.add('muted');
+            } else {
+                btn.innerText = "Eshitmoqda";
+                btn.classList.remove('muted');
+            }
+        }
+
+        function toggleGlobalMic() {
+            globalMicOn = !globalMicOn;
+            let btn = document.getElementById('global-mic-btn');
+            let widget = document.getElementById('floating-mic-widget');
+            let statusText = document.getElementById('mic-status-text');
+
+            if (globalMicOn) {
+                btn.innerText = "Ochiq 🎙️";
+                btn.classList.remove('muted');
+                widget.classList.remove('mic-off');
+                statusText.innerText = "Ovoz: Ochiq";
+            } else {
+                btn.innerText = "O'chirilgan 🔇";
+                btn.classList.add('muted');
+                widget.classList.add('mic-off');
+                statusText.innerText = "Ovoz: Yopiq";
+            }
+        }
+    </script>
+</body>
+</html>
+
